@@ -21,7 +21,7 @@ A comprehensive weather monitoring system built on the ESP32 platform that measu
 - DS18B20 temperature sensor with 4.7K pull-up resistor (GPIO 33)
 - BMP280 temperature/pressure sensor (I2C)
 - Battery monitoring circuit (connected to A1)
-- Debug mode jumper (GPIO 12)
+- Debug mode switch (GPIO 12)
 
 ## Software Dependencies
 
@@ -50,10 +50,10 @@ A comprehensive weather monitoring system built on the ESP32 platform that measu
 - Rain events trigger immediate wake-up via interrupt
 
 ### Debug Mode
-- Activated by grounding GPIO 12 at startup
+- Activated by grounding GPIO 12 at startup (using a switch)
 - Enables OTA programming
 - Prevents deep sleep for continuous operation
-- Exit debug mode by releasing GPIO 12
+- Exit Debug mode by opening the switch (will go back into deep sleep)
 
 ## Data Output
 
@@ -88,7 +88,7 @@ The system publishes JSON-formatted sensor data to MQTT topics:
 
 - GPIO 27: Rain gauge input (interrupt-enabled)
 - GPIO 33: DS18B20 temperature sensor
-- GPIO 12: Debug mode control (INPUT_PULLUP)
+- GPIO 12: Debug mode control switch (INPUT_PULLUP)
 - A1: Battery voltage monitoring
 - I2C: BMP280 sensor (default SDA/SCL pins)
 

@@ -21,8 +21,7 @@
 #include "inc/Battery.h"
 #include "inc/SoilTemp.h"
 #include "inc/bmp280.h"
-
-#include <ArduinoOTA.h>
+#include "inc/OTA.h"
 
 #define DEBUG_MODE_PIN 12
 #define GND_TMP_PIN 33
@@ -103,6 +102,9 @@ Raingauge<MQTT_QUEUE_LENGTH> rain_gauge(RAIN_PIN, &pub,&mqtt_queue,"backyard/tes
 Tempsensor<MQTT_QUEUE_LENGTH> temp_sensor(GND_TMP_PIN, &pub,&mqtt_queue,"backyard/test/");
 bmp280sensor<MQTT_QUEUE_LENGTH> bmp_sensor(&pub,&mqtt_queue,"backyard/test/");
 
+//OTA manager
+OTAManager ota;
+
 /*
 Method to print the reason by which ESP32
 has been awaken from sleep
@@ -160,37 +162,8 @@ void setup() {
     //connect to wifi early
     connectToWifi();
     
-    ArduinoOTA.setPort(OTA_PORT); // Port defaults to 3232
-    ArduinoOTA.setHostname(OTA_HOSTNAME); // Hostname defaults to esp3232-[MAC]
-    ArduinoOTA.setPassword(OTA_PASSWORD);     // No authentication by default
-
-    ArduinoOTA
-    .onStart([]() {
-      String type;
-      if (ArduinoOTA.getCommand() == U_FLASH)
-        type = "sketch";
-      else // U_SPIFFS
-        type = "filesystem";
-
-      // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
-      Serial.println("Start updating " + type);
-    })
-    .onEnd([]() {
-      Serial.println("\nEnd");
-    })
-    .onProgress([](unsigned int progress, unsigned int total) {
-      Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
-    })
-    .onError([](ota_error_t error) {
-      Serial.printf("Error[%u]: ", error);
-      if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
-      else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
-      else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
-      else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
-      else if (error == OTA_END_ERROR) Serial.println("End Failed");
-    });
-    ArduinoOTA.begin();
-    Serial.println("OTA Mode Active");
+    //start OTA
+    ota.begin(OTA_PORT, OTA_HOSTNAME, OTA_PASSWORD);
 
   } else {
     Serial.println("DEBUG MODE: OFF");
@@ -253,7 +226,7 @@ void loop() {
   } else {
 
     //DEBUG MODE 
-    ArduinoOTA.handle();
+    ota.handle();
     
     if (digitalRead(DEBUG_MODE_PIN) == 0) {
       debug_mode = false;
