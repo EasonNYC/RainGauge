@@ -3,7 +3,11 @@
 #define SOILTEMP_H
 
 #include <OneWire.h>
+#include <ArduinoJson.h>
 #include "inc/MqttMessageQueue.h"
+
+// Forward declarations
+class PubSubClient;
 
  // on pin 10 (a 4.7K resistor is necessary)
 

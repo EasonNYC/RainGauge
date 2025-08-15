@@ -3,14 +3,12 @@
 #define RAIN_H
 
 #include "Arduino.h"
-//#include <AsyncTCP.h>
-#include <WiFiUdp.h>
-
-#include <WiFi.h>
-#include <PubSubClient.h>
 #include <ArduinoJson.h>
 #include <FunctionalInterrupt.h>
 #include "inc/MqttMessageQueue.h"
+
+// Forward declarations
+class PubSubClient;
 
 
 #define uS_TO_S_FACTOR 1000000  /* Conversion factor for micro seconds to seconds */

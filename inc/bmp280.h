@@ -2,7 +2,11 @@
 #define BMP280_H
 
 #include <Adafruit_BMP280.h>
+#include <ArduinoJson.h>
 #include "inc/MqttMessageQueue.h"
+
+// Forward declarations
+class PubSubClient;
 
 Adafruit_BMP280 bmp; // I2C
 

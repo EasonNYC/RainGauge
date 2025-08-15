@@ -4,14 +4,10 @@
 //#include <ESPmDNS.h>
 
 #include "Arduino.h"
-#include "esp_sleep.h"
 #include "esp_bt.h"       // For btStop()
-
-#include "time.h"
 
 #include <WiFi.h>
 #include <PubSubClient.h>
-#include <ArduinoJson.h>
 
 #include "Secrets.h"
 
@@ -22,6 +18,7 @@
 #include "inc/SoilTemp.h"
 #include "inc/bmp280.h"
 #include "inc/OTA.h"
+#include "inc/DebugManager.h"
 #include "inc/utils.h"
 
 #define DEBUG_MODE_PIN 12
@@ -31,8 +28,7 @@
 
 #define MQTT_QUEUE_LENGTH 10
 
-unsigned long long TIME_TO_SLEEP  = 60;        /* Time ESP32 will go to sleep (in seconds). 3600 in an hour */\
-bool debug_mode = false;
+unsigned long long TIME_TO_SLEEP  = 60;        /* Time ESP32 will go to sleep (in seconds). 3600 in an hour */
 const char *topic = "backyard/test/";
 
 MqttMessageQueue<MQTT_QUEUE_LENGTH> mqtt_queue;  // max 10 messages
@@ -94,6 +90,8 @@ bmp280sensor<MQTT_QUEUE_LENGTH> bmp_sensor(&pub,&mqtt_queue,"backyard/test/");
 //OTA manager
 OTAManager ota;
 
+//Debug manager
+DebugManager dm(DEBUG_MODE_PIN, &ota);
 
 
 void setup() {
@@ -108,23 +106,9 @@ void setup() {
   // disable bluetooth
   btStop();
 
-  //setup debug mode pin
-  pinMode(DEBUG_MODE_PIN, INPUT_PULLUP);
-  
-  if (digitalRead(DEBUG_MODE_PIN)) {
-    Serial.println("DEBUG MODE: ON");
-    debug_mode = true;
-
-    //connect to wifi early
-    connectToWifi();
-    
-    //start OTA
-    ota.begin(OTA_PORT, OTA_HOSTNAME, OTA_PASSWORD);
-
-  } else {
-    Serial.println("DEBUG MODE: OFF");
-    debug_mode = false;
-  }
+  //setup debug mode
+  dm.checkDebugMode(); //prints Debug Mode status
+  dm.startDebugMode(connectToWifi, OTA_PORT, OTA_HOSTNAME, OTA_PASSWORD);
   
   //report persistent data
   Serial.println("Boot count: " + String(bootCount) + "\nRain count: " + String(latest_Raincount));
@@ -140,6 +124,7 @@ void setup() {
   configSleepTimer(RAIN_PIN);
 
 }
+
 
 void loop() {
 
@@ -162,25 +147,7 @@ void loop() {
   }
 
   //handle debug mode or deep sleep  
-  if (!debug_mode){
-    
-    // DEEP SLEEP
-    Serial.printf("(%dms) Sleeping now... snores... hehe\n", millis());
-    Serial.flush();
-    
-    WiFi.disconnect(true);
-    WiFi.mode(WIFI_OFF);
-
-    esp_deep_sleep_start();
-  } else {
-
-    //DEBUG MODE 
-    ota.handle();
-    
-    if (digitalRead(DEBUG_MODE_PIN) == 0) {
-      debug_mode = false;
-      Serial.println("Exiting OTA mode...");
-    }
-  }
+  dm.handleDebugMode(); 
+  dm.enterSleepMode();
 
 } //end main loop
