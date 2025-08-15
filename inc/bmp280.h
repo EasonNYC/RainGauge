@@ -1,3 +1,6 @@
+#ifndef BMP280_H
+#define BMP280_H
+
 #include <Adafruit_BMP280.h>
 #include "inc/MqttMessageQueue.h"
 
@@ -70,3 +73,5 @@ class bmp280sensor{
     }
 
 };
+
+#endif

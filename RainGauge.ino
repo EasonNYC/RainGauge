@@ -7,21 +7,22 @@
 #include "esp_sleep.h"
 #include "esp_bt.h"       // For btStop()
 
-#include "Secrets.h"
 #include "time.h"
 
-#include "WifiManager.h"
 #include <WiFi.h>
 #include <PubSubClient.h>
-
 #include <ArduinoJson.h>
-#include "inc/MqttMessageQueue.h"
 
+#include "Secrets.h"
+
+#include "inc/WifiManager.h"
+#include "inc/MqttMessageQueue.h"
 #include "inc/Rain.h"
 #include "inc/Battery.h"
 #include "inc/SoilTemp.h"
 #include "inc/bmp280.h"
 #include "inc/OTA.h"
+#include "inc/utils.h"
 
 #define DEBUG_MODE_PIN 12
 #define GND_TMP_PIN 33
@@ -39,18 +40,6 @@ WiFiManager wifi(WIFI_SSID, WIFI_PASSWORD);
 WiFiClient espclient;
 PubSubClient pub(espclient);
 
-//send queued messages to mqtt broker
-void sendQueuedMessages(PubSubClient& mqttClient) {
-    MqttMessage msg;
-    Serial.printf("(%dms) Sending queued messages...\n",millis());
-    while (!mqtt_queue.isEmpty()) {
-        if (mqtt_queue.dequeue(msg)) {
-            Serial.printf("Sending msg: %s\n",  msg.payload.c_str());
-            mqttClient.publish(msg.topic.c_str(), msg.payload.c_str());
-            delay(100);
-        }
-    }
-}
 
 //connect to wifi
 void connectToWifi(){
@@ -105,40 +94,7 @@ bmp280sensor<MQTT_QUEUE_LENGTH> bmp_sensor(&pub,&mqtt_queue,"backyard/test/");
 //OTA manager
 OTAManager ota;
 
-/*
-Method to print the reason by which ESP32
-has been awaken from sleep
-*/
-void print_wakeup_reason(){
-  esp_sleep_wakeup_cause_t wakeup_reason;
 
-  wakeup_reason = esp_sleep_get_wakeup_cause();
-  Serial.print("WAKEUP REASON: ");
-  switch(wakeup_reason)
-  {
-    //Wakeup caused by Rain Gauge
-    case ESP_SLEEP_WAKEUP_EXT0 : { 
-      latest_Raincount++;
-      Serial.printf("Rain. Raincount increased to %d\n", latest_Raincount);
-      activeRain = true;
-      break;
-    } 
-    
-    //Wakeup caused by pre-scheduled timer
-    case ESP_SLEEP_WAKEUP_TIMER : { 
-      Serial.println("Timer.");
-      timeToUpdate = true;
-
-      break;
-    }
-
-    //not really used
-    case ESP_SLEEP_WAKEUP_EXT1 : Serial.println("Wakeup caused by external signal using RTC_CNTL"); break;
-    case ESP_SLEEP_WAKEUP_TOUCHPAD : Serial.println("Wakeup caused by touchpad"); break;
-    case ESP_SLEEP_WAKEUP_ULP : Serial.println("Wakeup caused by ULP program"); break;
-    default : Serial.printf("Default. Wakeup was not caused by deep sleep: %d\n",wakeup_reason); break;
-  }
-}
 
 void setup() {
   ++bootCount;
@@ -181,14 +137,7 @@ void setup() {
   bmp_sensor.begin();
 
   //config sleep timer
-  esp_err_t ret = esp_sleep_enable_timer_wakeup(1000000ULL * TIME_TO_SLEEP);
-  if(ret == ESP_ERR_INVALID_ARG) {
-    Serial.println("WARNING: Sleep timer arg out of bounds");
-  }
-  Serial.println("ESP32 to sleep for every " + String(TIME_TO_SLEEP) +  " Seconds");
-
-  //config gpio sleep wakeup (for rain gauge bucket)
-  esp_sleep_enable_ext0_wakeup(GPIO_NUM_27, 0);
+  configSleepTimer(RAIN_PIN);
 
 }
 
@@ -198,17 +147,17 @@ void loop() {
   if (rain_gauge.isTimeToUpdate()) {
     
     connectToWifi();
-    //todo: ntp
+    //todo: ntp here
     if(connectToMqtt()){
       
-
+      //collect sensor data
       rain_gauge.handle();
       my_battery.handle();
       temp_sensor.handle();
       bmp_sensor.handle();
 
       //send data to mqtt broker
-      sendQueuedMessages(pub);
+      sendQueuedMessages(pub, mqtt_queue);
     }
   }
 

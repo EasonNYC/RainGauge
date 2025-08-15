@@ -1,4 +1,7 @@
 
+#ifndef RAIN_H
+#define RAIN_H
+
 #include "Arduino.h"
 //#include <AsyncTCP.h>
 #include <WiFiUdp.h>
@@ -99,3 +102,5 @@ private:
     volatile bool _rain = false;
     volatile unsigned long _lastMillis = 0;
 };
+
+#endif

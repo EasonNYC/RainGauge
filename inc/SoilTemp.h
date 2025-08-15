@@ -1,4 +1,7 @@
 
+#ifndef SOILTEMP_H
+#define SOILTEMP_H
+
 #include <OneWire.h>
 #include "inc/MqttMessageQueue.h"
 
@@ -121,3 +124,5 @@ private:
     volatile unsigned long convMillis = 0;
     
 };
+
+#endif
