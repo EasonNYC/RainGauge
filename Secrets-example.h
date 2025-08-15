@@ -1,4 +1,5 @@
-#pragma once
+#ifndef SECRETS_EXAMPLE_H
+#define SECRETS_EXAMPLE_H
 
 //WIFI
 const char* WIFI_SSID = "YourWiFiNetworkName";
@@ -21,3 +22,5 @@ const char* mqtt_broker = "192.168.1.XXX";
 const int mqtt_port = 1883;
 //const char *mqtt_username = "yourmqttusername";
 //const char *mqtt_password = "yourmqttpassword";
+
+#endif
