@@ -109,6 +109,14 @@ ESP32 → MQTT Broker → Telegraf → InfluxDB → Grafana
   - Automatic dashboard provisioning
   - Real-time sensor monitoring
 
+#### Grafana Dashboard Screenshots
+
+![Grafana Dashboard Overview](grafana1.jpg)
+*Main weather monitoring dashboard showing real-time sensor data*
+
+![Grafana Dashboard Details](grafana2.jpg)
+*Detailed view of weather metrics and historical trends*
+
 ### 🔍 MQTT Explorer (Optional Monitoring)
 - **Purpose**: Debug and monitor MQTT traffic
 - **Port**: 9002 (Web Interface)
