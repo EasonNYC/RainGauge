@@ -27,15 +27,15 @@ A comprehensive weather monitoring system built on ESP32 that measures rainfall,
 
 ## Operation Modes
 
-### Normal Mode
-- Wakes every 60 seconds to collect/transmit data
+### Run Mode
+- Wakes every 60 seconds to collect/transmit data (user configurable)
 - Deep sleep between measurements for battery conservation
 - Rain events trigger immediate wake-up
 
 ### Debug Mode
-- Activated by grounding GPIO 12 at startup
+- Activated by grounding GPIO 12 at startup (on wakeup) via a switch
 - Enables OTA programming and prevents sleep
-- Exit by opening the switch
+- Exit by flipping the switch at any time
 
 ---
 
@@ -113,7 +113,7 @@ ESP32 transmits JSON data:
 
 ## Security Notes
 
-⚠️ **Development Setup**: Default configuration uses development-friendly settings. For production:
+⚠️ **Development Setup**: Default configuration uses development-friendly settings for local deployment. For production:
 - Change all default passwords
 - Enable MQTT authentication
 - Regenerate InfluxDB tokens
