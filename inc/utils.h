@@ -18,9 +18,8 @@ extern unsigned long long TIME_TO_SLEEP;
  * @param mqttClient Reference to the PubSubClient for MQTT communication
  * @param mqtt_queue Reference to the MqttMessageQueue containing messages to send
  * 
- * This function dequeues all messages from the mqtt_queue and publishes them
- * to the MQTT broker using the provided mqttClient. Each message is sent with
- * a 100ms delay between transmissions. Debug output shows sending progress.
+ * Dequeues all messages and publishes to broker with 100ms delays.
+ * Debug output shows sending progress.
  */
 template<size_t QUEUE_SIZE>
 void sendQueuedMessages(PubSubClient& mqttClient, MqttMessageQueue<QUEUE_SIZE>& mqtt_queue) {
@@ -38,16 +37,12 @@ void sendQueuedMessages(PubSubClient& mqttClient, MqttMessageQueue<QUEUE_SIZE>& 
 /**
  * @brief Prints the reason why the ESP32 woke up from deep sleep
  * 
- * This function determines and prints the wakeup cause for the ESP32. It handles
- * different wakeup sources:
- * - ESP_SLEEP_WAKEUP_EXT0: Rain gauge trigger (increments rain count, sets activeRain)
- * - ESP_SLEEP_WAKEUP_TIMER: Scheduled timer wakeup (sets timeToUpdate flag)
- * - Other causes: External signals, touchpad, ULP, or normal startup
+ * Determines and prints wakeup cause:
+ * - EXT0: Rain gauge (increments count, sets activeRain)
+ * - TIMER: Scheduled wakeup (sets timeToUpdate)
+ * - Other: External signals, touchpad, ULP, normal startup
  * 
- * Side effects:
- * - Increments latest_Raincount if woken by rain gauge
- * - Sets activeRain = true for rain gauge wakeup
- * - Sets timeToUpdate = true for timer wakeup
+ * Side effects modify global rain/timer flags.
  */
 void print_wakeup_reason(){
   esp_sleep_wakeup_cause_t wakeup_reason;
@@ -84,13 +79,11 @@ void print_wakeup_reason(){
  * @brief Configures ESP32 deep sleep with timer and external GPIO wakeup
  * @param rain_pin The GPIO pin number connected to the rain gauge sensor
  * 
- * This function sets up two wakeup sources for the ESP32:
- * 1. Timer wakeup: Uses the global TIME_TO_SLEEP variable to set sleep duration
- * 2. External GPIO wakeup (EXT0): Configured for the rain gauge pin with LOW trigger
+ * Sets up dual wakeup sources:
+ * 1. Timer using TIME_TO_SLEEP for periodic transmission
+ * 2. GPIO EXT0 for immediate rain response (LOW trigger)
  * 
- * The timer wakeup allows periodic data transmission, while the GPIO wakeup
- * enables immediate response to rain events. Prints sleep configuration details
- * and warnings if timer arguments are invalid.
+ * Prints configuration and warnings for invalid timer arguments.
  */
 void configSleepTimer(int rain_pin)
 {

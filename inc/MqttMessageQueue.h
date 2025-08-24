@@ -46,14 +46,8 @@ public:
   /**
    * @brief Constructs an empty MQTT message queue
    * 
-   * Initializes the circular queue with zero messages and sets all
-   * internal pointers and counters to their starting positions:
-   * - _head: Points to the next message to dequeue (0)
-   * - _tail: Points to the next available slot for enqueue (0) 
-   * - _count: Number of messages currently in queue (0)
-   * 
-   * The queue is ready for immediate use after construction with
-   * full capacity available (MAX_SIZE messages).
+   * Initializes circular queue with zero messages, sets pointers to 0.
+   * Ready for immediate use with full MAX_SIZE capacity available.
    */
   MqttMessageQueue()
   : _head(0), _tail(0), _count(0) 
@@ -66,18 +60,10 @@ public:
    * @param doc ArduinoJson document containing the message data
    * @return true if message was successfully queued, false if queue is full
    * 
-   * Attempts to add a new message to the tail of the queue. The process:
-   * 1. Checks if queue has available space (not full)
-   * 2. Serializes the JsonDocument to a JSON string payload
-   * 3. Stores topic and serialized payload in the queue slot
-   * 4. Updates tail pointer (with wraparound) and increments count
+   * Checks space, serializes JsonDocument to payload, stores topic/payload,
+   * updates tail pointer with wraparound. Rejects if full to prevent overflow.
    * 
-   * If the queue is full, the message is rejected and false is returned
-   * to prevent overflow. This provides safe handling of burst sensor data
-   * or network connectivity issues.
-   * 
-   * Thread-safe for single producer, single consumer scenarios.
-   * For multiple producers, external synchronization may be required.
+   * Thread-safe for single producer/consumer. External sync needed for multiple.
    */
   bool enqueue(const String& topic, const JsonDocument& doc) {
     if (isFull()) { return false; }
@@ -98,20 +84,11 @@ public:
    * @param message Reference to MqttMessage that will receive the dequeued data
    * @return true if message was successfully retrieved, false if queue is empty
    * 
-   * Retrieves the message at the head of the queue (oldest message) following
-   * FIFO ordering. The process:
-   * 1. Checks if queue contains any messages (not empty)
-   * 2. Copies the message at head position to the provided reference
-   * 3. Updates head pointer (with wraparound) and decrements count
-   * 4. Returns true to indicate successful retrieval
+   * FIFO retrieval: checks if empty, copies head message to reference,
+   * updates head pointer with wraparound, decrements count.
    * 
-   * If the queue is empty, no operation is performed and false is returned.
-   * The provided message reference remains unchanged in this case.
-   * 
-   * This method is typically called by MQTT transmission code to process
-   * queued messages for network transmission during connectivity windows.
-   * 
-   * Thread-safe for single producer, single consumer scenarios.
+   * Returns false if empty. Used by MQTT transmission during connectivity.
+   * Thread-safe for single producer/consumer.
    */
   bool dequeue(MqttMessage& message) {
     if (isEmpty()) {return false;}
@@ -126,16 +103,8 @@ public:
    * @brief Checks if the queue contains no messages
    * @return true if queue is empty (count = 0), false otherwise
    * 
-   * Determines whether the queue has any messages available for dequeue
-   * operation. This is a const method that doesn't modify queue state.
-   * 
-   * Used to:
-   * - Prevent dequeue operations on empty queues
-   * - Determine if there are pending messages to transmit
-   * - Implement conditional processing based on queue contents
-   * - Loop through all queued messages until empty
-   * 
-   * Returns true when _count equals 0, indicating no messages are stored.
+   * Const method for empty state check. Used to prevent dequeue on empty
+   * queues, check pending messages, and loop through queued messages.
    */
   bool isEmpty() const {
     return _count == 0;
@@ -145,17 +114,9 @@ public:
    * @brief Checks if the queue has reached maximum capacity
    * @return true if queue is full (count = MAX_SIZE), false otherwise
    * 
-   * Determines whether the queue can accept additional messages via enqueue
-   * operations. This is a const method that doesn't modify queue state.
-   * 
-   * Used to:
-   * - Prevent enqueue operations that would cause overflow
-   * - Implement backpressure handling in sensor data collection
-   * - Monitor queue utilization for system health diagnostics
-   * - Trigger alternative processing when buffer is saturated
-   * 
-   * Returns true when _count equals MAX_SIZE, indicating all queue slots
-   * are occupied and no more messages can be stored.
+   * Const method for capacity check. Used to prevent overflow, implement
+   * backpressure handling, monitor utilization, and trigger alternative
+   * processing when buffer saturated.
    */
   bool isFull() const {
     return _count == MAX_SIZE;

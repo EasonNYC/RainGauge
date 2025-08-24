@@ -53,16 +53,10 @@ class bmp280sensor{
    * @param q Pointer to MqttMessageQueue for message buffering
    * @param top MQTT topic string for sensor data publication
    * 
-   * Initializes the BMP280 sensor interface with MQTT connectivity:
-   * - Stores references for MQTT client and message queue
-   * - Sets the publication topic for environmental data
-   * - Prepares the sensor for I2C communication setup
+   * Initializes BMP280 interface with MQTT connectivity. Hardware
+   * initialization occurs in begin() method.
    * 
-   * The sensor hardware initialization occurs separately in begin() method
-   * to allow for proper error handling and configuration after construction.
-   * 
-   * MQTT messages will be published with format:
-   * {"bmp_temperature": temp_fahrenheit, "bmp_pressure": pressure_pascals}
+   * MQTT format: {"bmp_temperature": temp_f, "bmp_pressure": pressure_pa}
    */
   bmp280sensor(PubSubClient* cli, MqttMessageQueue<QUEUE_SIZE>* q, String top)
   :client(cli),tx_queue(q),topic(top)
@@ -73,14 +67,9 @@ class bmp280sensor{
   /**
    * @brief Destructor for BMP280 sensor cleanup
    * 
-   * Currently performs no specific cleanup operations as the Adafruit_BMP280
-   * library handles I2C resource management automatically. The global bmp
-   * object remains valid for the application lifetime.
-   * 
-   * In future implementations, this could include:
-   * - Sensor power-down commands for ultra-low power operation
-   * - I2C bus cleanup if using dedicated bus management
-   * - Resource deallocation for dynamic sensor configurations
+   * No specific cleanup as Adafruit_BMP280 library handles I2C resources
+   * automatically. Future enhancements could include sensor power-down
+   * commands and I2C bus cleanup for ultra-low power operation.
    */
   ~bmp280sensor(){}
 
@@ -135,17 +124,9 @@ class bmp280sensor{
    * @param celcius Temperature value in degrees Celsius
    * @return Temperature value in degrees Fahrenheit
    * 
-   * Performs standard Celsius to Fahrenheit temperature conversion using
-   * the formula: °F = (°C × 1.8) + 32
-   * 
-   * This utility function is used internally to convert the BMP280's native
-   * Celsius readings to Fahrenheit for regions/applications that prefer
-   * Fahrenheit scale measurements.
-   * 
-   * The conversion maintains the same precision as the input Celsius value,
-   * preserving the sensor's accuracy specifications in the converted result.
-   * 
-   * Example: 25.0°C converts to 77.0°F
+   * Standard conversion: °F = (°C × 1.8) + 32
+   * Maintains sensor precision in converted result.
+   * Example: 25.0°C → 77.0°F
    */
   float getF(float celcius){
     return celcius * 1.8 + 32.0;
