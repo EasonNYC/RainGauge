@@ -107,8 +107,9 @@ void setup() {
   btStop();
 
   //setup debug mode
-  dm.checkDebugMode(); //prints Debug Mode status
-  dm.startDebugMode(connectToWifi, OTA_PORT, OTA_HOSTNAME, OTA_PASSWORD);
+  if(dm.checkDebugModePin()) {
+    dm.startDebugMode(connectToWifi, OTA_PORT, OTA_HOSTNAME, OTA_PASSWORD);
+  }
   
   //report persistent data
   Serial.println("Boot count: " + String(bootCount) + "\nRain count: " + String(latest_Raincount));
@@ -147,7 +148,6 @@ void loop() {
   }
 
   //handle debug mode or deep sleep  
-  dm.handleDebugMode(); 
-  dm.enterSleepMode();
+  dm.handle(); 
 
 } //end main loop

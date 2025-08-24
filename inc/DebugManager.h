@@ -14,11 +14,11 @@ private:
     
 public:
     DebugManager(int debug_pin, OTAManager* ota_manager) 
-        : _debug_pin(debug_pin), _debug_mode(false), ota(ota_manager) {
+        : debug_pin(debug_pin), debug_mode(false), ota(ota_manager) {
         pinMode(debug_pin, INPUT_PULLUP);
     }
     
-    void checkDebugMode() {
+    bool checkDebugModePin() {
         if (digitalRead(debug_pin)) {
             Serial.println("DEBUG MODE: ON");
             debug_mode = true;
@@ -26,9 +26,11 @@ public:
             Serial.println("DEBUG MODE: OFF");
             debug_mode = false;
         }
+
+        return debug_mode;
     }
     
-    bool isDebugMode() const {
+    bool getDebugMode() const {
         return debug_mode;
     }
     
@@ -41,24 +43,11 @@ public:
             ota->begin(ota_port, ota_hostname, ota_password);
         }
     }
-    
-    void handleDebugMode() {
-        if (_debug_mode) {
-            // Handle OTA updates
-            ota->handle();
-            
-            // Check if user wants to exit debug mode
-            if (digitalRead(debug_pin) == 0) {
-                debug_mode = false;
-                Serial.println("Exiting OTA mode...");
-            }
-        }
-    }
-    
+
     void enterSleepMode() {
         if (!debug_mode) {
             // DEEP SLEEP
-            Serial.printf("(%dms) Sleeping now... snores... hehe\n", millis());
+            Serial.printf("(%dms) Sleeping now...\n", millis());
             Serial.flush();
             
             WiFi.disconnect(true);
@@ -67,6 +56,23 @@ public:
             esp_deep_sleep_start();
         }
     }
+    
+    void handle() {
+        if (debug_mode) {
+            // Handle OTA updates
+            ota->handle();
+            
+            // Check if user wants to exit debug mode
+            if (digitalRead(debug_pin) == 0) {
+                debug_mode = false;
+                Serial.println("Exiting OTA mode...");
+            }
+        } else {
+            enterSleepMode();
+        }
+    }
+    
+    
 };
 
 #endif
