@@ -20,6 +20,7 @@
 #include "inc/OTA.h"
 #include "inc/DebugManager.h"
 #include "inc/Utils.h"
+#include "inc/SensorScheduler.h"
 
 #define DEBUG_MODE_PIN 12
 #define GND_TMP_PIN 33
@@ -93,6 +94,9 @@ OTAManager ota;
 //Debug manager
 DebugManager dm(DEBUG_MODE_PIN, &ota);
 
+//Sensor scheduler
+SensorScheduler sensorScheduler;
+
 
 void setup() {
   ++bootCount;
@@ -114,12 +118,12 @@ void setup() {
   //report persistent data
   Serial.println("Boot count: " + String(bootCount) + "\nRain count: " + String(latest_Raincount));
 
-  //setup sensors
+  //setup sensors with scheduler
   Serial.printf("(%dms) Setting up... yawn.. i need a coffee.\n", millis());
-  my_battery.begin();
-  rain_gauge.begin();
-  temp_sensor.begin(); 
-  bmp_sensor.begin();
+  sensorScheduler.addSensor(&my_battery);
+  sensorScheduler.addSensor(&rain_gauge);
+  sensorScheduler.addSensor(&temp_sensor);
+  sensorScheduler.addSensor(&bmp_sensor);
 
   //config sleep timer
   configSleepTimer(RAIN_PIN);
@@ -130,24 +134,24 @@ void setup() {
 void loop() {
 
   //handle sensors
-  if (rain_gauge.isTimeToUpdate()) {
+  if (sensorScheduler.hasDataToSend()) {
     
     connectToWifi();
     //todo: ntp here
     if(connectToMqtt()){
       
-      //collect sensor data
-      rain_gauge.handle();
-      my_battery.handle();
-      temp_sensor.handle();
-      bmp_sensor.handle();
+      //collect sensor data from all ready sensors
+      sensorScheduler.printStatus();
+      sensorScheduler.checkAndUpdateAll();
 
       //send data to mqtt broker
       sendQueuedMessages(pub, mqtt_queue);
     }
   }
 
-  //handle debug mode or deep sleep  
-  dm.handle(); 
+  //handle debug mode or dynamic deep sleep
+  unsigned long sleepTime = sensorScheduler.getNextWakeTime();
+  sensorScheduler.prepareSleep(sleepTime);
+  dm.handle(sleepTime);
 
 } //end main loop

@@ -5,6 +5,7 @@
 #include <OneWire.h>
 #include <ArduinoJson.h>
 #include "inc/MqttMessageQueue.h"
+#include "inc/BaseSensor.h"
 
 // Forward declarations
 class PubSubClient;
@@ -28,7 +29,7 @@ class PubSubClient;
  * Supports multiple sensor resolution modes (9-12 bit).
  */
 template<size_t QUEUE_SIZE>
-class Tempsensor{
+class Tempsensor : public BaseSensor {
   
 public:
   /**
@@ -74,45 +75,25 @@ public:
   }
   
   /**
-   * @brief Initiates a non-blocking temperature conversion
+   * @brief Initiates a temperature conversion
    * 
    * Starts DS18B20 conversion (up to 750ms for 12-bit). Resets bus,
-   * selects sensor, sends 0x44 command, records time, sets state to 1.
-   * 
-   * Call waitForDataReady() to check completion.
+   * selects sensor, sends 0x44 command.
    */
   void startConversion(){
-
     ds.reset();
     ds.select(addr);
     ds.write(0x44, 1);        // start conversion, with parasite power on at the end
-    convMillis = millis();
-    sensorState = 1;
-
   }
   
-  /**
-   * @brief Checks if temperature conversion is complete (non-blocking)
-   * 
-   * Monitors elapsed time since startConversion(). 1000ms timeout provides
-   * margin above 750ms max conversion time.
-   * 
-   * States: 1=converting, 2=complete. Call periodically after startConversion().
-   */
-  void waitForDataReady(){
-    if((millis() - convMillis) > 1000) {
-      sensorState = 2;
-    }
-
-  }
 
   /**
    * @brief Reads temperature data from the DS18B20 sensor
    * 
    * Retrieves 9-byte scratchpad after conversion complete. Resets bus,
-   * selects sensor, sends 0xBE command, reads data, resets state to 0.
+   * selects sensor, sends 0xBE command, reads data.
    * 
-   * Call after waitForDataReady() shows complete. Use getC()/getF() for temp.
+   * Call after conversion is complete. Use getC()/getF() for temperature.
    */
   void readData(){
     ds.reset();             //present
@@ -121,10 +102,7 @@ public:
  
     for (int i = 0; i < 9; i++) {           // we need 9 bytes
       data[i] = ds.read();
-      //  WebSerial.print(data[i], HEX);
-      //  WebSerial.print(" ");
     }
-    sensorState = 0;
   }
 
   /**
@@ -184,16 +162,21 @@ public:
    * Format: {"soil_temp": temperature_in_fahrenheit}
    */
   void handle(){
-
+    Serial.printf("(%dms) Starting soil temp conversion...\n", millis());
+    
+    // Use existing methods for conversion
+    startConversion();
+    delay(1000); // Wait for DS18B20 conversion (750ms + margin)
     readData();
+    
+    // Report and queue data
     reportF();
 
     JsonDocument myObject;
-
     myObject["soil_temp"] = getF();
-
     tx_queue->enqueue(topic.c_str(), myObject);
-
+    
+    Serial.printf("(%dms) SoilTemp queued for MQTT\n", millis());
   }
     
   /**
@@ -208,6 +191,19 @@ public:
     Serial.printf("(%dms) Soil Temp = %fF\n", millis(), getF());
   }
 
+  // BaseSensor interface implementation
+  unsigned long getUpdateInterval() override {
+    return 120000; // 2 minutes for soil temperature
+  }
+  
+  bool needsUpdate() override {
+    return false; // Scheduled updates only, no immediate needs
+  }
+  
+  String getSensorId() override {
+    return "SoilTemp";
+  }
+
 private:
     //const uint8_t PIN;
     OneWire ds;
@@ -218,8 +214,6 @@ private:
     PubSubClient* client;
     MqttMessageQueue<QUEUE_SIZE>* tx_queue;
     String topic;
-    int sensorState = 0;
-    volatile unsigned long convMillis = 0;
     
 };
 

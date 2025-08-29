@@ -9,7 +9,6 @@
 // Forward declarations
 extern int latest_Raincount;
 extern bool activeRain;
-extern bool timeToUpdate;
 extern unsigned long long TIME_TO_SLEEP;
 
 /**
@@ -62,8 +61,7 @@ void print_wakeup_reason(){
     //Wakeup caused by pre-scheduled timer
     case ESP_SLEEP_WAKEUP_TIMER : { 
       Serial.println("Timer.");
-      timeToUpdate = true;
-
+      // SensorScheduler now handles timing logic
       break;
     }
 

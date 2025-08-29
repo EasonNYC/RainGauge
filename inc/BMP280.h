@@ -4,6 +4,7 @@
 #include <Adafruit_BMP280.h>
 #include <ArduinoJson.h>
 #include "inc/MqttMessageQueue.h"
+#include "inc/BaseSensor.h"
 
 // Forward declarations
 class PubSubClient;
@@ -40,7 +41,7 @@ Adafruit_BMP280 bmp; // I2C
  * in battery-powered IoT applications.
  */
 template<size_t QUEUE_SIZE>
-class bmp280sensor{
+class bmp280sensor : public BaseSensor {
 
   PubSubClient* client;
   MqttMessageQueue<QUEUE_SIZE>* tx_queue;
@@ -192,7 +193,20 @@ class bmp280sensor{
     myObject["bmp_pressure"] = pressure;
 
     tx_queue->enqueue(topic.c_str(), myObject);
-    }
+  }
+
+  // BaseSensor interface implementation
+  unsigned long getUpdateInterval() override {
+    return 180000; // 3 minutes for atmospheric sensors
+  }
+  
+  bool needsUpdate() override {
+    return false; // Scheduled updates only, not time-critical
+  }
+  
+  String getSensorId() override {
+    return "BMP280";
+  }
 
 };
 

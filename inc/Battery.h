@@ -5,6 +5,7 @@
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 #include "inc/MqttMessageQueue.h"
+#include "inc/BaseSensor.h"
 
 /* NOTE: The ADC doesnt work while WiFi is on. So the sampling happens in begin() and the reporting happens in the handle() function.
 */
@@ -41,7 +42,7 @@
  * Voltage Range: Designed for 3.0V - 4.2V Li-ion/LiPo battery monitoring
  */
 template<size_t QUEUE_SIZE>
-class battery {
+class battery : public BaseSensor {
 private:
     int total;              // the running total
     float average;          // the average
@@ -161,6 +162,19 @@ public:
         myObject["battery"] = vbat;
     
         tx_queue->enqueue(topic.c_str(), myObject);
+    }
+
+    // BaseSensor interface implementation
+    unsigned long getUpdateInterval() override {
+        return 300000; // 5 minutes for battery monitoring
+    }
+    
+    bool needsUpdate() override {
+        return false; // Battery is not time-critical, only scheduled updates
+    }
+    
+    String getSensorId() override {
+        return "Battery";
     }
 };
 
