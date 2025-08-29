@@ -19,13 +19,8 @@ RTC_DATA_ATTR int bootCount = 0;
 RTC_DATA_ATTR int latest_Raincount = 0;
 RTC_DATA_ATTR bool activeRain = false;
 
-// Sensor scheduler persistent timing data
-RTC_DATA_ATTR unsigned long schedulerLastWakeTime = 0;
-RTC_DATA_ATTR unsigned long schedulerSleepDuration = 0;
-RTC_DATA_ATTR unsigned long batteryLastUpdate = 0;
+// Rain gauge persistent timing data
 RTC_DATA_ATTR unsigned long rainGaugeLastUpdate = 0;
-RTC_DATA_ATTR unsigned long soilTempLastUpdate = 0;
-RTC_DATA_ATTR unsigned long bmp280LastUpdate = 0;
 
 float unit_of_rain = 0.01193;//inches per pulse
 

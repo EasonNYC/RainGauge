@@ -5,13 +5,15 @@
 #include "inc/BaseSensor.h"
 #include <vector>
 
-// Forward declarations for RTC persistent variables (defined in Rain.h)
-extern unsigned long schedulerLastWakeTime;
-extern unsigned long schedulerSleepDuration;
-extern unsigned long batteryLastUpdate;
-extern unsigned long rainGaugeLastUpdate;
-extern unsigned long soilTempLastUpdate;
-extern unsigned long bmp280LastUpdate;
+// RTC persistent variables for scheduler timing
+RTC_DATA_ATTR unsigned long schedulerLastWakeTime = 0;
+RTC_DATA_ATTR unsigned long schedulerSleepDuration = 0;
+
+// Forward declarations for sensor RTC variables (distributed across sensor headers)
+extern unsigned long rainGaugeLastUpdate;      // Rain.h
+extern unsigned long batteryLastUpdate;        // Battery.h
+extern unsigned long soilTempLastUpdate;       // SoilTemp.h
+extern unsigned long bmp280LastUpdate;         // BMP280.h
 
 /**
  * @brief Manages sensor update scheduling for ESP32 deep sleep cycles

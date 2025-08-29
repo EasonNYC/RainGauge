@@ -6,6 +6,9 @@
 #include "inc/MqttMessageQueue.h"
 #include "inc/BaseSensor.h"
 
+// RTC persistent timing for BMP280 sensor
+RTC_DATA_ATTR unsigned long bmp280LastUpdate = 0;
+
 // Forward declarations
 class PubSubClient;
 

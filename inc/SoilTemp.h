@@ -7,6 +7,9 @@
 #include "inc/MqttMessageQueue.h"
 #include "inc/BaseSensor.h"
 
+// RTC persistent timing for soil temperature sensor
+RTC_DATA_ATTR unsigned long soilTempLastUpdate = 0;
+
 // Forward declarations
 class PubSubClient;
 

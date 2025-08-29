@@ -7,6 +7,9 @@
 #include "inc/MqttMessageQueue.h"
 #include "inc/BaseSensor.h"
 
+// RTC persistent timing for battery sensor
+RTC_DATA_ATTR unsigned long batteryLastUpdate = 0;
+
 /* NOTE: The ADC doesnt work while WiFi is on. So the sampling happens in begin() and the reporting happens in the handle() function.
 */
 
