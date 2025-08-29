@@ -8,7 +8,9 @@ A comprehensive weather monitoring system built on ESP32 that measures rainfall,
 - **Environmental Sensors**: Soil temperature (DS18B20), atmospheric temp/pressure (BMP280), battery monitoring
 - **Low Power Design**: Deep sleep with sensor wake-up triggers
 - **Connectivity**: WiFi with MQTT data transmission and OTA updates
-- **Debug Mode**: Pin-controlled debug mode for development
+- **Debug Mode**: Switch-controlled debug mode for development
+- **Docker Backend**:
+ ESP32 → MQTT → Telegraf → InfluxDB → Grafana
 
 ## Hardware Requirements
 
@@ -79,14 +81,14 @@ docker ps  # Should show 4-5 containers running
 ```
 
 4. **Access Dashboards**:
-   - Grafana: http://localhost:3000 (admin:admin)
+   - Grafana: http://localhost:3000 
    - InfluxDB: http://localhost:8086
 
 ## Testing
 
 Send test data to verify the pipeline:
 ```bash
-docker exec mosquitto mosquitto_pub -t 'paper_wifi/test/' -m '{"rain":0.024,"soil_temp":72.5,"bmp_temperature":75.2,"bmp_pressure":101325,"battery":3.7}'
+docker exec mosquitto mosquitto_pub -t 'backyard/test/' -m '{"rain":0.024,"soil_temp":72.5,"bmp_temperature":75.2,"bmp_pressure":101325,"battery":3.7}'
 ```
 
 ## ESP32 Configuration

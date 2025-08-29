@@ -16,10 +16,10 @@
 #include "inc/Rain.h"
 #include "inc/Battery.h"
 #include "inc/SoilTemp.h"
-#include "inc/bmp280.h"
+#include "inc/BMP280.h"
 #include "inc/OTA.h"
 #include "inc/DebugManager.h"
-#include "inc/utils.h"
+#include "inc/Utils.h"
 
 #define DEBUG_MODE_PIN 12
 #define GND_TMP_PIN 33
