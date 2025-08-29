@@ -178,10 +178,8 @@ public:
    * Main interface for automatic measurement/reporting workflow.
    */
   void handle() {
-    if(isTimeToUpdate()){
-        reportRain();
-        updateRain();
-    }
+    reportRain();
+    updateRain();
   }
 
   // BaseSensor interface implementation
