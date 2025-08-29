@@ -4,6 +4,7 @@
 #include "Arduino.h"
 #include "inc/BaseSensor.h"
 #include <vector>
+#include "esp_sleep.h"
 
 // RTC persistent variables for scheduler timing
 RTC_DATA_ATTR unsigned long schedulerLastWakeTime = 0;
@@ -41,12 +42,25 @@ public:
      * @brief Constructor initializes timing for current wake cycle
      */
     SensorScheduler() {
-        currentWakeTime = schedulerLastWakeTime + schedulerSleepDuration;
-        if (schedulerLastWakeTime == 0 && schedulerSleepDuration == 0) {
+        esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
+        
+        if (schedulerLastWakeTime == 0) {
             // First boot - set all sensors to run immediately
             currentWakeTime = millis();
             firstBoot = true;
+            Serial.printf("First boot detected - currentWakeTime: %lu\n", currentWakeTime);
         } else {
+            // Always advance by full intended duration regardless of wake reason
+            // This ensures timer-based sensor scheduling isn't disrupted by rain interrupts
+            currentWakeTime = schedulerLastWakeTime + schedulerSleepDuration;
+            
+            if (wakeup_reason == ESP_SLEEP_WAKEUP_EXT0) {
+                Serial.printf("Rain wake - treating as timer wake for scheduling: %lu (last: %lu + duration: %lu)\n", 
+                             currentWakeTime, schedulerLastWakeTime, schedulerSleepDuration);
+            } else {
+                Serial.printf("Timer wake - currentWakeTime: %lu (last: %lu + duration: %lu)\n", 
+                             currentWakeTime, schedulerLastWakeTime, schedulerSleepDuration);
+            }
             firstBoot = false;
         }
     }
@@ -176,24 +190,49 @@ public:
      * On first boot (lastUpdate = 0), all sensors are considered due.
      */
     bool hasDataToSend() {
+        Serial.printf("Checking hasDataToSend... firstBoot: %s\n", firstBoot ? "YES" : "NO");
+        
         for (const auto& task : tasks) {
             if (!task.enabled) continue;
             
             // Immediate needs (interrupts, etc.)
             if (task.sensor->needsUpdate()) {
+                Serial.printf("Sensor %s needs immediate update\n", task.sensor->getSensorId().c_str());
                 return true;
             }
             
             // First boot: all sensors should run
             if (firstBoot) {
+                Serial.printf("First boot - sensor %s should run\n", task.sensor->getSensorId().c_str());
                 return true;
             }
             
-            // Scheduled updates (first time or interval elapsed)
-            if (*task.lastUpdate == 0 || (currentWakeTime - *task.lastUpdate) >= task.interval) {
+            // Scheduled updates (first time or interval elapsed)  
+            bool isDue = false;
+            unsigned long timeSinceUpdate = 0;
+            
+            if (*task.lastUpdate == 0) {
+                isDue = true; // First time running this sensor
+                timeSinceUpdate = 0;
+            } else if (currentWakeTime >= *task.lastUpdate) {
+                timeSinceUpdate = currentWakeTime - *task.lastUpdate;
+                isDue = (timeSinceUpdate >= task.interval);
+            } else {
+                // Clock rollover or timing issue - force update to resync
+                Serial.printf("Timing resync needed for %s (current: %lu < last: %lu)\n", 
+                             task.sensor->getSensorId().c_str(), currentWakeTime, *task.lastUpdate);
+                isDue = true;
+                timeSinceUpdate = 0;
+            }
+            
+            Serial.printf("Sensor %s: currentTime=%lu, lastUpdate=%lu, timeSince=%lu, interval=%lu, isDue=%s\n", 
+                         task.sensor->getSensorId().c_str(), currentWakeTime, *task.lastUpdate, timeSinceUpdate, task.interval, isDue ? "YES" : "NO");
+            
+            if (isDue) {
                 return true;
             }
         }
+        Serial.println("No sensors need updating");
         return false;
     }
     
@@ -216,10 +255,24 @@ public:
      * Shows persistent timing across deep sleep cycles.
      */
     void printStatus() {
+        esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
+        String wakeReason = (wakeup_reason == ESP_SLEEP_WAKEUP_EXT0) ? "Rain Interrupt" : 
+                           (wakeup_reason == ESP_SLEEP_WAKEUP_TIMER) ? "Timer" : "Other";
+        
         Serial.println("=== Sensor Scheduler Status ===");
+        Serial.printf("Wake Reason: %s\n", wakeReason.c_str());
         Serial.printf("Current Wake Time: %lu ms\n", currentWakeTime);
         Serial.printf("Last Wake Time: %lu ms\n", schedulerLastWakeTime);
-        Serial.printf("Sleep Duration: %lu ms\n", schedulerSleepDuration);
+        
+        // Calculate actual elapsed time safely to avoid underflow
+        unsigned long actualElapsed = 0;
+        if (currentWakeTime >= schedulerLastWakeTime) {
+            actualElapsed = currentWakeTime - schedulerLastWakeTime;
+        } else {
+            // Handle millis() overflow (occurs every ~49.7 days)
+            actualElapsed = (ULONG_MAX - schedulerLastWakeTime) + currentWakeTime + 1;
+        }
+        Serial.printf("Actual Elapsed: %lu ms\n", actualElapsed);
         
         for (const auto& task : tasks) {
             unsigned long timeSinceUpdate = currentWakeTime - *task.lastUpdate;

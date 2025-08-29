@@ -29,7 +29,6 @@
 
 #define MQTT_QUEUE_LENGTH 10
 
-unsigned long long TIME_TO_SLEEP  = 60;        /* Time ESP32 will go to sleep (in seconds). 3600 in an hour */
 const char *topic = "backyard/test/";
 
 MqttMessageQueue<MQTT_QUEUE_LENGTH> mqtt_queue;  // max 10 messages
@@ -125,8 +124,9 @@ void setup() {
   sensorScheduler.addSensor(&temp_sensor);
   sensorScheduler.addSensor(&bmp_sensor);
 
-  //config sleep timer
-  configSleepTimer(RAIN_PIN);
+  // Sleep timer will be configured dynamically in loop() based on sensor needs
+  // Still need to configure rain pin for ext0 wakeup
+  esp_sleep_enable_ext0_wakeup((gpio_num_t)RAIN_PIN, 0);
 
 }
 
@@ -152,6 +152,14 @@ void loop() {
   //handle debug mode or dynamic deep sleep
   unsigned long sleepTime = sensorScheduler.getNextWakeTime();
   sensorScheduler.prepareSleep(sleepTime);
+  
+  // Configure dynamic sleep timer based on sensor needs
+  esp_err_t ret = esp_sleep_enable_timer_wakeup(1000000ULL * (sleepTime / 1000));
+  if(ret == ESP_ERR_INVALID_ARG) {
+    Serial.println("WARNING: Sleep timer arg out of bounds");
+  }
+  Serial.printf("ESP32 to sleep for %lu ms\n", sleepTime);
+  
   dm.handle(sleepTime);
 
 } //end main loop

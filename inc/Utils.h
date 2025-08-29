@@ -8,8 +8,6 @@
 
 // Forward declarations
 extern int latest_Raincount;
-extern bool activeRain;
-extern unsigned long long TIME_TO_SLEEP;
 
 /**
  * @brief Sends all queued MQTT messages to the broker
@@ -54,7 +52,6 @@ void print_wakeup_reason(){
     case ESP_SLEEP_WAKEUP_EXT0 : { 
       latest_Raincount++;
       Serial.printf("Rain. Raincount increased to %d\n", latest_Raincount);
-      activeRain = true;
       break;
     } 
     
@@ -73,26 +70,5 @@ void print_wakeup_reason(){
   }
 }
 
-/**
- * @brief Configures ESP32 deep sleep with timer and external GPIO wakeup
- * @param rain_pin The GPIO pin number connected to the rain gauge sensor
- * 
- * Sets up dual wakeup sources:
- * 1. Timer using TIME_TO_SLEEP for periodic transmission
- * 2. GPIO EXT0 for immediate rain response (LOW trigger)
- * 
- * Prints configuration and warnings for invalid timer arguments.
- */
-void configSleepTimer(int rain_pin)
-{
-  esp_err_t ret = esp_sleep_enable_timer_wakeup(1000000ULL * TIME_TO_SLEEP);
-  if(ret == ESP_ERR_INVALID_ARG) {
-    Serial.println("WARNING: Sleep timer arg out of bounds");
-  }
-  Serial.println("ESP32 to sleep for every " + String(TIME_TO_SLEEP) +  " Seconds");
-
-  //config gpio sleep wakeup (for rain gauge bucket)
-  esp_sleep_enable_ext0_wakeup((gpio_num_t)rain_pin, 0);
-}
 
 #endif

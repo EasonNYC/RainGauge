@@ -142,9 +142,6 @@ public:
      */
     void enterSleepMode(unsigned long sleepTimeMs) {
         if (!debug_mode) {
-            // Reconfigure sleep timer for dynamic duration
-            esp_sleep_enable_timer_wakeup(sleepTimeMs * 1000ULL);
-            
             Serial.printf("(%dms) Sleeping for %lu ms...\n", millis(), sleepTimeMs);
             Serial.flush();
             
@@ -154,40 +151,12 @@ public:
             esp_deep_sleep_start();
         }
     }
-    
-    /**
-     * @brief Main processing method for debug/power management in application loop
-     * 
-     * Core operational logic for continuous main loop calls.
-     * 
-     * Debug mode: Processes OTA requests, monitors pin for mode exit
-     * (HIGH to LOW), allows real-time mode switching.
-     * 
-     * Normal mode: Immediately enters deep sleep for battery conservation.
-     * 
-     * Centralizes power management decisions for both operational modes.
-     */
-    void handle() {
-        if (debug_mode) {
-            // Handle OTA updates
-            ota->handle();
-            
-            // Check if user wants to exit debug mode
-            if (digitalRead(debug_pin) == 0) {
-                debug_mode = false;
-                Serial.println("Exiting OTA mode...");
-            }
-        } else {
-            enterSleepMode();
-        }
-    }
-    
+       
     /**
      * @brief Main processing method with dynamic sleep timing
      * @param sleepTimeMs Milliseconds to sleep (from sensor scheduler)
      * 
-     * Same as handle() but allows custom sleep duration instead of fixed TIME_TO_SLEEP.
-     * Use this version with SensorScheduler for optimized sleep timing.
+     * Allows custom sleep duration for optimized sleep timing.
      */
     void handle(unsigned long sleepTimeMs) {
         if (debug_mode) {

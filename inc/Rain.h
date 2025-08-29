@@ -17,7 +17,6 @@ class PubSubClient;
 //persistent data
 RTC_DATA_ATTR int bootCount = 0;
 RTC_DATA_ATTR int latest_Raincount = 0;
-RTC_DATA_ATTR bool activeRain = false;
 
 // Rain gauge persistent timing data
 RTC_DATA_ATTR unsigned long rainGaugeLastUpdate = 0;
@@ -97,13 +96,11 @@ public:
    * Process: Check debounce time, increment counters, update RTC data,
    * set rain flags, update timestamp.
    * 
-   * WARNING: Keep minimal - no Serial.print, delays, or complex operations.
    */
   void ARDUINO_ISR_ATTR isr(){
     if(millis()-_lastMillis > 100) {
       _rainBucketsDumped += 1;
       latest_Raincount += _rainBucketsDumped;
-      activeRain = true;
       _lastMillis = millis();
     }
   }
@@ -113,11 +110,11 @@ public:
    * @brief Checks if active rainfall has been detected
    * @return true if rain has been detected since last update, false otherwise
    * 
-   * Returns global activeRain flag set by ISR on bucket tips.
+   * Returns true if any rain tips have been counted since last reset.
    * Persists across deep sleep via RTC_DATA_ATTR storage.
    * Used for conditional MQTT reporting and main loop processing.
    */
-  bool isRaining() { return activeRain;}
+  bool isRaining() { return latest_Raincount > 0;}
 
   /**
    * @brief Processes accumulated rainfall data and publishes via MQTT
@@ -140,9 +137,7 @@ public:
       rainLastHour = (float)latest_Raincount*unit_of_rain; //inches per bucket
       Serial.printf("Update: Rainfall LastHour=%f inches\n", rainLastHour);
       
-      activeRain = false;
       _rainBucketsDumped = 0;
-      
     } 
 
     JsonDocument myObject;
