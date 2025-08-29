@@ -29,8 +29,8 @@ A comprehensive weather monitoring system built on ESP32 that measures rainfall,
 
 ### Run Mode
 - Wakes every 60 seconds to collect/transmit data (user configurable)
-- Deep sleep between measurements for battery conservation
-- Rain events trigger immediate wake-up
+- Deep sleep between timed measurements for battery conservation
+- Rain triggers ext. interrupt wake-up events for measuring rainfall
 
 ### Debug Mode
 - Activated by grounding GPIO 12 at startup (on wakeup) via a switch
@@ -95,7 +95,7 @@ Update `Secrets.h` to connect to your backend:
 ```cpp
 #define MQTT_SERVER "your-backend-server-ip"
 #define MQTT_PORT 1883
-#define MQTT_TOPIC "paper_wifi/test/"
+#define MQTT_TOPIC "backyard/test/"
 ```
 
 ## Data Format
@@ -113,24 +113,8 @@ ESP32 transmits JSON data:
 
 ## Security Notes
 
-⚠️ **Development Setup**: Default configuration uses development-friendly settings for local deploymentca. For production:
+⚠️ **Development Setup**: Default configuration uses development-friendly settings for local deployment. For production I reccomend the following:
 - Change all default passwords
 - Enable MQTT authentication
 - Regenerate InfluxDB tokens
 - Configure SSL/TLS
-
-## Monitoring
-
-```bash
-# Check services
-docker-compose ps
-
-# View logs
-docker-compose logs -f grafana
-
-# Restart service  
-docker-compose restart telegraf
-
-# Reset all data
-docker-compose down -v
-```
