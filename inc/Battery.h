@@ -179,6 +179,10 @@ public:
     String getSensorId() override {
         return "Battery";
     }
+    
+    unsigned long* getLastUpdatePtr() override {
+        return &batteryLastUpdate;
+    }
 };
 
 #endif

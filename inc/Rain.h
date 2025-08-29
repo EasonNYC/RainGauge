@@ -169,13 +169,12 @@ public:
   /**
    * @brief Main processing method for scheduled rainfall updates
    * 
-   * Checks timer wakeup flag, processes complete measurement cycle when due.
-   * Call regularly from main loop.
+   * Called by SensorScheduler during scheduled updates only.
+   * Processes accumulated rain data and transmits via MQTT.
    * 
-   * Process: Check isTimeToUpdate(), if due call reportRain() for debug
-   * and updateRain() for processing/transmission.
+   * Process: Report debug info and update/transmit rainfall data.
    * 
-   * Main interface for automatic measurement/reporting workflow.
+   * Only called during scheduled intervals, not on rain interrupts.
    */
   void handle() {
     reportRain();
@@ -193,6 +192,10 @@ public:
   
   String getSensorId() override {
     return "RainGauge";
+  }
+  
+  unsigned long* getLastUpdatePtr() override {
+    return &rainGaugeLastUpdate;
   }
 
 private:

@@ -210,6 +210,10 @@ class bmp280sensor : public BaseSensor {
   String getSensorId() override {
     return "BMP280";
   }
+  
+  unsigned long* getLastUpdatePtr() override {
+    return &bmp280LastUpdate;
+  }
 
 };
 

@@ -9,11 +9,6 @@
 RTC_DATA_ATTR unsigned long schedulerLastWakeTime = 0;
 RTC_DATA_ATTR unsigned long schedulerSleepDuration = 0;
 
-// Forward declarations for sensor RTC variables (distributed across sensor headers)
-extern unsigned long rainGaugeLastUpdate;      // Rain.h
-extern unsigned long batteryLastUpdate;        // Battery.h
-extern unsigned long soilTempLastUpdate;       // SoilTemp.h
-extern unsigned long bmp280LastUpdate;         // BMP280.h
 
 /**
  * @brief Manages sensor update scheduling for ESP32 deep sleep cycles
@@ -62,36 +57,20 @@ public:
      * 
      * Registers sensor with scheduler using its getUpdateInterval().
      * Calls sensor->begin() to initialize hardware.
-     * Sets lastUpdate to currentWakeTime so intervals start from now.
+     * Each sensor manages its own RTC persistent timing data.
      */
     void addSensor(BaseSensor* sensor) {
         if (sensor == nullptr) return;
         
         sensor->begin();
         
-        // Map sensor ID to its RTC persistent variable
-        unsigned long* persistentLastUpdate = nullptr;
-        String sensorId = sensor->getSensorId();
-        
-        if (sensorId == "Battery") {
-            persistentLastUpdate = &batteryLastUpdate;
-        } else if (sensorId == "RainGauge") {
-            persistentLastUpdate = &rainGaugeLastUpdate;
-        } else if (sensorId == "SoilTemp") {
-            persistentLastUpdate = &soilTempLastUpdate;
-        } else if (sensorId == "BMP280") {
-            persistentLastUpdate = &bmp280LastUpdate;
-        }
-        
+        unsigned long* persistentLastUpdate = sensor->getLastUpdatePtr();
         if (persistentLastUpdate != nullptr) {
-            // On first boot, keep lastUpdate as 0 so sensors are immediately due
-            // On subsequent boots, keep the persisted value unchanged
-            
             SensorTask task(sensor, sensor->getUpdateInterval(), persistentLastUpdate);
             tasks.push_back(task);
             
             Serial.printf("Added sensor %s with %lu ms interval (lastUpdate: %lu)\n", 
-                         sensorId.c_str(), 
+                         sensor->getSensorId().c_str(), 
                          sensor->getUpdateInterval(),
                          *persistentLastUpdate);
         }

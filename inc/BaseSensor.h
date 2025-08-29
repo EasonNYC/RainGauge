@@ -56,6 +56,15 @@ public:
     virtual String getSensorId() = 0;
     
     /**
+     * @brief Get pointer to sensor's RTC persistent timing variable
+     * @return Pointer to RTC_DATA_ATTR variable storing last update time
+     * 
+     * Each sensor manages its own RTC persistent timing data.
+     * Used by SensorScheduler for timing calculations across deep sleep.
+     */
+    virtual unsigned long* getLastUpdatePtr() = 0;
+    
+    /**
      * @brief Virtual destructor for proper cleanup
      */
     virtual ~BaseSensor() {}

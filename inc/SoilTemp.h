@@ -206,6 +206,10 @@ public:
   String getSensorId() override {
     return "SoilTemp";
   }
+  
+  unsigned long* getLastUpdatePtr() override {
+    return &soilTempLastUpdate;
+  }
 
 private:
     //const uint8_t PIN;
