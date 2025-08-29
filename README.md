@@ -43,11 +43,11 @@ A comprehensive weather monitoring system built on ESP32 that measures rainfall,
 
 Complete Docker-based data pipeline: **ESP32 → MQTT → Telegraf → InfluxDB → Grafana**
 
-![Grafana Dashboard Overview](grafana1.jpg)
+![Grafana Dashboard Overview](grafana4.jpg)
 *Real-time weather monitoring dashboard*
 
-![Grafana Dashboard Details](grafana2.jpg)
-*Detailed metrics and historical trends*
+![Grafana Dashboard Details](grafana3.jpg)
+*Detailed metrics, historical trends, and yard work recomendations based on those trends*
 
 ## Components
 
@@ -113,7 +113,7 @@ ESP32 transmits JSON data:
 
 ## Security Notes
 
-⚠️ **Development Setup**: Default configuration uses development-friendly settings for local deployment. For production:
+⚠️ **Development Setup**: Default configuration uses development-friendly settings for local deploymentca. For production:
 - Change all default passwords
 - Enable MQTT authentication
 - Regenerate InfluxDB tokens
