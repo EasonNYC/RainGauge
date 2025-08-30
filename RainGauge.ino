@@ -98,7 +98,7 @@ DebugManager dm(DEBUG_MODE_PIN, &ota);
 SensorScheduler sensorScheduler;
 
 //NTP sync manager (US Eastern timezone with DST)
-NTPSync ntpSync("EST5EDT,M3.2.0,M11.1.0", 86400000); // Sync once per day
+NTPSync ntpSync("EST5EDT,M3.2.0,M11.1.0"); // Sync on every internet connection
 
 
 void setup() {
@@ -142,12 +142,9 @@ void loop() {
     
     connectToWifi();
     
-    // NTP time synchronization using SensorScheduler timebase
-    unsigned long currentTime = sensorScheduler.getCurrentWakeTime();
-    if (ntpSync.needsSync(currentTime)) {
-      if (ntpSync.begin()) {
-        ntpSync.sync(currentTime, 5000); // 5 second timeout to save battery
-      }
+    // NTP time synchronization on every internet connection
+    if (ntpSync.begin()) {
+      ntpSync.sync(sensorScheduler.getCurrentWakeTime(), 5000); // 5 second timeout to save battery
     }
     
     if(connectToMqtt()){

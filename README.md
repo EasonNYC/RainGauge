@@ -33,6 +33,7 @@ A comprehensive weather monitoring system built on ESP32 that measures rainfall,
 - Wakes every 60 seconds to collect/transmit data (user configurable)
 - Deep sleep between timed measurements for battery conservation
 - Rain triggers ext. interrupt wake-up events for measuring rainfall
+- Uses a local NTP server for faster time sync
 
 ### Debug Mode
 - Activated by grounding GPIO 12 at startup (on wakeup) via a switch

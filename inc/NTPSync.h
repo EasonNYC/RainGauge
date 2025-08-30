@@ -5,6 +5,7 @@
 #include <WiFi.h>
 #include <time.h>
 #include "esp_sntp.h"
+#include "../Secrets.h"
 
 // RTC persistent variables for NTP sync status
 RTC_DATA_ATTR bool ntpSynced = false;
@@ -26,14 +27,12 @@ RTC_DATA_ATTR unsigned long lastNtpSyncTime = 0; // Using same timebase as Senso
 class NTPSync {
 private:
     const char* timezone;
-    unsigned long syncIntervalMs;
     bool initialized;
     
 public:
     /**
      * @brief Constructs NTP synchronization manager
      * @param tz Timezone string (e.g., "EST5EDT,M3.2.0,M11.1.0" for US Eastern)
-     * @param syncInterval Sync interval in milliseconds (default: 24 hours)
      * 
      * Common timezone examples:
      * - "UTC0" - UTC time
@@ -41,8 +40,8 @@ public:
      * - "PST8PDT,M3.2.0,M11.1.0" - US Pacific (auto DST)
      * - "CET-1CEST,M3.5.0,M10.5.0/3" - Central European (auto DST)
      */
-    NTPSync(const char* tz = "UTC0", unsigned long syncInterval = 86400000) 
-        : timezone(tz), syncIntervalMs(syncInterval), initialized(false) {
+    NTPSync(const char* tz = "UTC0") 
+        : timezone(tz), initialized(false) {
     }
     
     /**
@@ -63,11 +62,20 @@ public:
         setenv("TZ", timezone, 1);
         tzset();
         
-        // Configure SNTP with multiple servers for reliability
+        // Configure SNTP with local server first, then fallback to public servers
         esp_sntp_setoperatingmode(SNTP_OPMODE_POLL);
-        esp_sntp_setservername(0, "pool.ntp.org");
-        esp_sntp_setservername(1, "time.nist.gov");
-        esp_sntp_setservername(2, "time.google.com");
+        
+#ifdef ntp_server
+        esp_sntp_setservername(0, ntp_server);        // Local NTP server from Secrets.h
+        esp_sntp_setservername(1, "pool.ntp.org");    // Fallback public server
+        esp_sntp_setservername(2, "time.google.com"); // Additional fallback
+        Serial.printf("(%dms) NTP: Using local server %s\n", millis(), ntp_server);
+#else
+        esp_sntp_setservername(0, "pool.ntp.org");    // Default public server
+        esp_sntp_setservername(1, "time.nist.gov");   // Fallback
+        esp_sntp_setservername(2, "time.google.com"); // Additional fallback
+        Serial.printf("(%dms) NTP: Using public servers\n", millis());
+#endif
         esp_sntp_init();
         
         initialized = true;
@@ -110,7 +118,8 @@ public:
         // Print synchronized time
         time_t now = time(nullptr);
         struct tm* timeinfo = localtime(&now);
-        Serial.printf("NTP: Synced to %04d-%02d-%02d %02d:%02d:%02d\n",
+        Serial.printf("(%dms) NTP: Synced to %04d-%02d-%02d %02d:%02d:%02d\n",
+                     millis(),
                      timeinfo->tm_year + 1900,
                      timeinfo->tm_mon + 1,
                      timeinfo->tm_mday,
@@ -121,42 +130,6 @@ public:
         return true;
     }
     
-    /**
-     * @brief Check if time sync is needed based on interval
-     * @param currentTime Current time from SensorScheduler timebase
-     * @return true if sync is due or never performed
-     * 
-     * Uses RTC persistent variables to track sync status across deep sleep.
-     * Accounts for battery conservation by avoiding frequent syncs.
-     * Uses SensorScheduler timebase for accurate interval tracking across sleep cycles.
-     */
-    bool needsSync(unsigned long currentTime) {
-        if (!ntpSynced) {
-            Serial.println("NTP: Never synced, sync needed");
-            return true; // Never synced
-        }
-        
-        // Check if sync interval has elapsed using persistent timebase
-        if (currentTime >= lastNtpSyncTime) {
-            unsigned long timeSinceSync = currentTime - lastNtpSyncTime;
-            bool syncDue = (timeSinceSync >= syncIntervalMs);
-            
-            if (syncDue) {
-                Serial.printf("NTP: Sync due - %lu ms since last sync (interval: %lu ms)\n", 
-                             timeSinceSync, syncIntervalMs);
-            } else {
-                Serial.printf("NTP: Sync not needed - %lu ms since last sync (interval: %lu ms)\n", 
-                             timeSinceSync, syncIntervalMs);
-            }
-            
-            return syncDue;
-        } else {
-            // Clock rollover or timing issue - force resync
-            Serial.printf("NTP: Timing resync needed (current: %lu < last: %lu)\n", 
-                         currentTime, lastNtpSyncTime);
-            return true;
-        }
-    }
     
     /**
      * @brief Get current Unix timestamp

@@ -23,4 +23,7 @@ const int mqtt_port = 1883;
 //const char *mqtt_username = "yourmqttusername";
 //const char *mqtt_password = "yourmqttpassword";
 
+// NTP Server (optional - comment out to use public NTP servers)
+const char* ntp_server = "192.168.1.1";  // Default: router/gateway IP
+
 #endif
