@@ -2,13 +2,15 @@
 #define MQTTMESSAGEQUEUE_H
 
 #include <ArduinoJson.h>
+#include <time.h>
 
 /**
- * @brief Container for MQTT message data with topic and payload
+ * @brief Container for MQTT message data with topic, payload, and timestamp
  * 
- * Simple structure that holds the essential components of an MQTT message:
+ * Structure that holds the essential components of an MQTT message:
  * - topic: The MQTT topic string where the message will be published
  * - payload: The message content as a JSON-serialized string
+ * - timestamp: Unix timestamp when message was created (0 if time unavailable)
  * 
  * Used by the MqttMessageQueue to store messages for reliable transmission
  * when network connectivity is intermittent or during batch processing.
@@ -16,6 +18,9 @@
 struct MqttMessage {
     String topic;
     String payload;
+    time_t timestamp;
+    
+    MqttMessage() : timestamp(0) {}
 };
 
 /**
@@ -55,14 +60,15 @@ public:
   }
 
   /**
-   * @brief Adds a new MQTT message to the queue with JSON serialization
+   * @brief Adds a new MQTT message to the queue with JSON serialization and timestamp
    * @param topic The MQTT topic string for message publication
    * @param doc ArduinoJson document containing the message data
    * @return true if message was successfully queued, false if queue is full
    * 
-   * Checks space, serializes JsonDocument to payload, stores topic/payload,
+   * Checks space, serializes JsonDocument to payload, stores topic/payload/timestamp,
    * updates tail pointer with wraparound. Rejects if full to prevent overflow.
    * 
+   * Automatically captures current Unix timestamp for message ordering and debugging.
    * Thread-safe for single producer/consumer. External sync needed for multiple.
    */
   bool enqueue(const String& topic, const JsonDocument& doc) {
@@ -73,6 +79,7 @@ public:
 
     _queue[_tail].topic = topic;
     _queue[_tail].payload = payload;
+    _queue[_tail].timestamp = time(nullptr); // Capture current Unix timestamp
 
     _tail = (_tail + 1) % MAX_SIZE;
     _count++;

@@ -249,6 +249,17 @@ public:
     }
     
     /**
+     * @brief Get current wake time for external timing calculations
+     * @return Current time in the scheduler's persistent timebase
+     * 
+     * Provides access to the scheduler's time tracking for other systems
+     * that need to coordinate with the persistent timing across deep sleep cycles.
+     */
+    unsigned long getCurrentWakeTime() const {
+        return currentWakeTime;
+    }
+    
+    /**
      * @brief Print scheduler status for debugging
      * 
      * Outputs all sensor states, timing, and intervals for troubleshooting.

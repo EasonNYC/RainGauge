@@ -10,13 +10,13 @@
 extern int latest_Raincount;
 
 /**
- * @brief Sends all queued MQTT messages to the broker
+ * @brief Sends all queued MQTT messages to the broker with optional timestamp info
  * @tparam QUEUE_SIZE The size of the MQTT message queue
  * @param mqttClient Reference to the PubSubClient for MQTT communication
  * @param mqtt_queue Reference to the MqttMessageQueue containing messages to send
  * 
  * Dequeues all messages and publishes to broker with 100ms delays.
- * Debug output shows sending progress.
+ * Debug output shows sending progress and timestamps when available.
  */
 template<size_t QUEUE_SIZE>
 void sendQueuedMessages(PubSubClient& mqttClient, MqttMessageQueue<QUEUE_SIZE>& mqtt_queue) {
@@ -24,7 +24,15 @@ void sendQueuedMessages(PubSubClient& mqttClient, MqttMessageQueue<QUEUE_SIZE>& 
     Serial.printf("(%dms) Sending queued messages...\n",millis());
     while (!mqtt_queue.isEmpty()) {
         if (mqtt_queue.dequeue(msg)) {
-            Serial.printf("Sending msg: %s\n",  msg.payload.c_str());
+            if (msg.timestamp > 0) {
+                struct tm* timeinfo = localtime(&msg.timestamp);
+                Serial.printf("Sending msg (timestamp: %04d-%02d-%02d %02d:%02d:%02d): %s\n",
+                             timeinfo->tm_year + 1900, timeinfo->tm_mon + 1, timeinfo->tm_mday,
+                             timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec,
+                             msg.payload.c_str());
+            } else {
+                Serial.printf("Sending msg: %s\n", msg.payload.c_str());
+            }
             mqttClient.publish(msg.topic.c_str(), msg.payload.c_str());
             delay(100);
         }

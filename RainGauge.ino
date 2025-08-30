@@ -21,6 +21,7 @@
 #include "inc/DebugManager.h"
 #include "inc/Utils.h"
 #include "inc/SensorScheduler.h"
+#include "inc/NTPSync.h"
 
 #define DEBUG_MODE_PIN 12
 #define GND_TMP_PIN 33
@@ -96,6 +97,9 @@ DebugManager dm(DEBUG_MODE_PIN, &ota);
 //Sensor scheduler
 SensorScheduler sensorScheduler;
 
+//NTP sync manager (US Eastern timezone with DST)
+NTPSync ntpSync("EST5EDT,M3.2.0,M11.1.0", 86400000); // Sync once per day
+
 
 void setup() {
   ++bootCount;
@@ -137,7 +141,15 @@ void loop() {
   if (sensorScheduler.hasDataToSend()) {
     
     connectToWifi();
-    //todo: ntp here
+    
+    // NTP time synchronization using SensorScheduler timebase
+    unsigned long currentTime = sensorScheduler.getCurrentWakeTime();
+    if (ntpSync.needsSync(currentTime)) {
+      if (ntpSync.begin()) {
+        ntpSync.sync(currentTime, 5000); // 5 second timeout to save battery
+      }
+    }
+    
     if(connectToMqtt()){
       
       //collect sensor data from all ready sensors
