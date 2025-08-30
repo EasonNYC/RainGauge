@@ -28,6 +28,7 @@ class NTPSync {
 private:
     const char* timezone;
     bool initialized;
+    String activeServer;
     
 public:
     /**
@@ -69,12 +70,14 @@ public:
         esp_sntp_setservername(0, ntp_server);        // Local NTP server from Secrets.h
         esp_sntp_setservername(1, "pool.ntp.org");    // Fallback public server
         esp_sntp_setservername(2, "time.google.com"); // Additional fallback
-        Serial.printf("(%dms) NTP: Using local server %s\n", millis(), ntp_server);
+        activeServer = String(ntp_server) + " (local)";
+        Serial.printf("(%dms) NTP: Configured with local server %s\n", millis(), ntp_server);
 #else
         esp_sntp_setservername(0, "pool.ntp.org");    // Default public server
         esp_sntp_setservername(1, "time.nist.gov");   // Fallback
         esp_sntp_setservername(2, "time.google.com"); // Additional fallback
-        Serial.printf("(%dms) NTP: Using public servers\n", millis());
+        activeServer = "pool.ntp.org (public)";
+        Serial.printf("(%dms) NTP: Configured with public servers\n", millis());
 #endif
         esp_sntp_init();
         
@@ -118,14 +121,15 @@ public:
         // Print synchronized time
         time_t now = time(nullptr);
         struct tm* timeinfo = localtime(&now);
-        Serial.printf("(%dms) NTP: Synced to %04d-%02d-%02d %02d:%02d:%02d\n",
+        Serial.printf("(%dms) NTP: Synced to %04d-%02d-%02d %02d:%02d:%02d via %s\n",
                      millis(),
                      timeinfo->tm_year + 1900,
                      timeinfo->tm_mon + 1,
                      timeinfo->tm_mday,
                      timeinfo->tm_hour,
                      timeinfo->tm_min,
-                     timeinfo->tm_sec);
+                     timeinfo->tm_sec,
+                     activeServer.c_str());
         
         return true;
     }
